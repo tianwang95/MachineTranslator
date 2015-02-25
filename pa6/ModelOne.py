@@ -1,17 +1,36 @@
 #!/usr/bin/env python
 #Implementation of IBM Model One Training
+#Tian Wang, Bogac Kerem Goksel, Russell Kaplan, Duc Nguyen
 
 import itertools as it
 import collections
 import math
+import cPickle as pickle
+
+def getDict():
+	return collections.defaultdict(float)
 
 class ModelOne:
-	def __init__(self, foreign_file, native_file, iterations=5, Verbose=False):
+	def __init__(self, foreign_file=None, native_file=None, loadFile=None, iterations=5, Verbose=False):
 		"""
-		foreign_file: path to the foreign language part of the bitext
-		native_file: path to the native language part of the bitext
+		To use: In the import, you MUST also import getDict:
+			from ModelOne import ModelOne, getDict'
+
+		To load from file do:
+			MyModel = ModelOne(loadFile="save.model")
+
+		To save to a file:
+			MyModel.saveToFile("save.model")
+
+		foreign_file: path to the foreign language part of the bitext - default is None
+
+		native_file: path to the native language part of the bitext - default is None
+		
 		iterations: number of EM iterations the user wishes to complete, default is 5
 		Verbose: Set to True for debug information, default is False.
+
+		Example:
+			MyModel = ModelOne("../pa6/stuff.es", "../pa6/stuff.en")
 
 		After construction, access log-probability by 'myModel[native_word][foreign_word]'
 		Just accessing 'myModel[native_word]' will return an OrderedDict that is sorted
@@ -26,12 +45,24 @@ class ModelOne:
 		#create necessary maps here
 		self.foreign_lines = []
 		self.native_lines = []
-		self.foreign_vocab = set()
-		self.native_vocab= set()
-		self.probabilityMap = collections.defaultdict(lambda:collections.defaultdict(lambda: float('-inf')))
-		self.reverseMap = collections.defaultdict(lambda: collections.defaultdict(lambda: float('-inf')))
-		self.readFile(foreign_file, native_file)
-		self.train(iterations, Verbose)
+		self.probabilityMap = collections.defaultdict(getDict)
+		self.reverseMap = collections.defaultdict(getDict)
+		if loadFile:
+			self.loadFromFile(loadFile)
+		elif foreign_file and native_file:
+			self.readFile(foreign_file, native_file)
+			self.train(iterations, Verbose)
+
+	def loadFromFile(self, fileName):
+		mapList = pickle.load( open( fileName, "rb"))
+		self.probabilityMap = mapList[0]
+		self.reverseMap = mapList[1]
+		self.foreign_lines = mapList[2]
+		self.native_lines = mapList[3]
+
+	def saveToFile(self, fileName):
+		mapList = [self.probabilityMap, self.reverseMap, self.foreign_lines, self.native_lines]
+		pickle.dump( mapList, open(fileName, "wb"), -1)
 
 	def readFile(self, foreignName, nativeName):
 		"""
@@ -41,21 +72,17 @@ class ModelOne:
 		with open(foreignName) as f:
 			for line in f:
 				words = line.strip().split()
-				for word in words:
-					self.foreign_vocab.add(word)
 				self.foreign_lines.append(words)
 		with open(nativeName) as n:
 			for line in n:
 				words = ["<NULL>"]
 				words += line.strip().split()
-				for word in words:
-					self.native_vocab.add(word)
 				self.native_lines.append(words)
 
 	def train(self, iterations, Verbose=False):
 		"""
-		Trains the data and returns a map that can be indexed ["foreign word"]["native word"]
-		that provides the log probablity of that word alignment
+		Trains the data and returns a map that can be indexed ["native word"]["foreign word"]
+		and gets the log probablity of that word alignment
 		"""
 		iterations -= 1
 		if Verbose:
@@ -114,12 +141,6 @@ class ModelOne:
 			for foreign_w in foreign_dict.keys():
 				initMap[native_w][foreign_w] = initMap[native_w][foreign_w]/w_sum
 
-	# def _logProbAdd(self, a, b):
-	# 	"""
-	# 	Adds two log probabilities together!
-	# 	"""
-	# 	return -math.log(math.exp(-a) + math.exp(-b))
-
 	def __getitem__(self, index):
 		return self.probabilityMap[index]
 
@@ -132,6 +153,8 @@ def main():
 	# english_file = "../pa6/test.en"
 
 	model = ModelOne(spanish_file, english_file, Verbose=True)
+	print "done"
+	model.saveToFile("save.model")
 
 	print model["house"]["casa"]
 	# for span_line, eng_line in it.izip(model.foreign_lines, model.native_lines):
