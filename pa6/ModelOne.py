@@ -91,16 +91,18 @@ class ModelOne:
 		if Verbose:
 			print "Sorting and reversing dictionary..."
 		for native_w, foreign_dict in initMap.iteritems():
+			for foreign_w, value in foreign_dict.iteritems():
+				self.probabilityMap[native_w][foreign_w] = math.log(value)
 			self.probabilityMap[native_w] = collections.OrderedDict(sorted(
-				initMap[native_w].items(), key=lambda t:t[1], reverse=True), lambda: float('-inf'))
-			for foreign_w, value in initMap[native_w].iteritems():
+				self.probabilityMap[native_w].items(), key=lambda t:t[1], reverse=True))
+			for foreign_w, value in self.probabilityMap[native_w].iteritems():
 				self.reverseMap[foreign_w][native_w] = value
 
 		if Verbose:
 			print "Sorting reversed dictionary..."
 		for foreign_w, native_dict in self.reverseMap.iteritems():
 			self.reverseMap[foreign_w] = collections.OrderedDict(sorted(
-				self.reverseMap[foreign_w].items(), key=lambda t:t[1], reverse=True), lambda: float('-inf'))
+				self.reverseMap[foreign_w].items(), key=lambda t:t[1], reverse=True))
 
 
 	def _normalize(self, initMap):
@@ -108,16 +110,15 @@ class ModelOne:
 		Normalizes initMap so that the values of model["word"] sum to one
 		"""
 		for native_w, foreign_dict in initMap.iteritems():
-			w_sum = math.log(sum(foreign_dict.values()))
+			w_sum = sum(foreign_dict.values())
 			for foreign_w in foreign_dict.keys():
-				initMap[native_w][foreign_w] = math.log(
-					initMap[native_w][foreign_w]) - w_sum
+				initMap[native_w][foreign_w] = initMap[native_w][foreign_w]/w_sum
 
-	def _logProbAdd(self, a, b):
-		"""
-		Adds two log probabilities together!
-		"""
-		return -math.log(math.exp(-a) + math.exp(-b))
+	# def _logProbAdd(self, a, b):
+	# 	"""
+	# 	Adds two log probabilities together!
+	# 	"""
+	# 	return -math.log(math.exp(-a) + math.exp(-b))
 
 	def __getitem__(self, index):
 		return self.probabilityMap[index]
