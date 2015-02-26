@@ -7,6 +7,7 @@ import math
 import codecs
 import nltk
 import ModelOne
+from itertools import izip
 
 class PhraseTable:
 	"""
@@ -24,6 +25,14 @@ class PhraseTable:
 			self.native_sentences = f.readlines()
 		self.fore_to_nat_model = ModelOne(foreign_file, native_file)
 		self.nat_to_fore_model = ModelOne(native_file, foreign_file)
+
+		for fsentence, nsentence in izip(self.foreign_sentences, self.native_sentences):
+			fore_to_nat_alignments = build_alignments(self.fore_to_nat_model, fsentence, nsentence)
+			nat_to_fore_alignments = build_alignments(self.nat_to_fore_model, nsentence, fsentence)
+
+	def build_alignments(self, model, foreign_sentence, native_sentence):
+		pass
+
 
 ######FOR TESTING PURPOSES ONLY########
 def main():
