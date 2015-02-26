@@ -6,6 +6,7 @@ import itertools as it
 import collections
 import math
 import cPickle as pickle
+import re
 
 def getDict():
 	return collections.defaultdict(float)
@@ -37,10 +38,11 @@ class ModelOne:
 		so that the best word is first.
 
 		Similarly, a reverse dictionary will also be created which you can access by writing
-		'myModel.reverseMap[foreign_word][native_word]'. 
+			myModel.reverseMap[foreign_word][native_word]
 
 		Caution: if the log-probability does not exist - it won't return float('-inf') so please
-		check beforehand to see if something is in there. 
+		check beforehand to see if something is in there: 
+			myModel[nonexistent_word].get(fakeword, float('-inf'))
 		"""
 		#create necessary maps here
 		self.foreign_lines = []
@@ -62,7 +64,17 @@ class ModelOne:
 
 	def saveToFile(self, fileName):
 		mapList = [self.probabilityMap, self.reverseMap, self.foreign_lines, self.native_lines]
-		pickle.dump( mapList, open(fileName, "wb"), -1)
+		pickle.dump( mapList, open(fileName, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+
+	def processSentence(self, line):
+		"""
+		Line should be a string.
+		Removes numbers and punctuation.
+		Returns a list of words
+		"""
+		removeNumbers = '(\d[\d\.\,\%]*[ .]\%? ?)|( \d[\d\.\,\%]*)'
+		return re.sub(removeNumbers, "", line.strip()).split()
+
 
 	def readFile(self, foreignName, nativeName):
 		"""
@@ -71,12 +83,11 @@ class ModelOne:
 		"""
 		with open(foreignName) as f:
 			for line in f:
-				words = line.strip().split()
-				self.foreign_lines.append(words)
+				self.foreign_lines.append(self.processSentence(line))
 		with open(nativeName) as n:
 			for line in n:
 				words = ["<NULL>"]
-				words += line.strip().split()
+				words += self.processSentence(line)
 				self.native_lines.append(words)
 
 	def train(self, iterations, Verbose=False):
