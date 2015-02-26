@@ -9,7 +9,7 @@ import cPickle as pickle
 import re
 
 def getDict():
-	return collections.defaultdict(float)
+	return collections.Counter()
 
 class ModelOne:
 	def __init__(self, foreign_file=None, native_file=None, loadFile=None, iterations=5, Verbose=False):
@@ -34,15 +34,14 @@ class ModelOne:
 			MyModel = ModelOne("../pa6/stuff.es", "../pa6/stuff.en")
 
 		After construction, access log-probability by 'myModel[native_word][foreign_word]'
-		Just accessing 'myModel[native_word]' will return an OrderedDict that is sorted
-		so that the best word is first.
+		Just accessing 'myModel[native_word]' will return a Counter. Use .most_common(n)
 
 		Similarly, a reverse dictionary will also be created which you can access by writing
 			myModel.reverseMap[foreign_word][native_word]
 
 		Caution: if the log-probability does not exist - it won't return float('-inf') so please
 		check beforehand to see if something is in there: 
-			myModel[nonexistent_word].get(fakeword, float('-inf'))
+			myModel[existent_word].get(fakeword, float('-inf'))
 		"""
 		#create necessary maps here
 		self.foreign_lines = []
@@ -131,16 +130,16 @@ class ModelOne:
 		for native_w, foreign_dict in initMap.iteritems():
 			for foreign_w, value in foreign_dict.iteritems():
 				self.probabilityMap[native_w][foreign_w] = math.log(value)
-			self.probabilityMap[native_w] = collections.OrderedDict(sorted(
-				self.probabilityMap[native_w].items(), key=lambda t:t[1], reverse=True))
+			# self.probabilityMap[native_w] = collections.OrderedDict(sorted(
+			# 	self.probabilityMap[native_w].items(), key=lambda t:t[1], reverse=True))
 			for foreign_w, value in self.probabilityMap[native_w].iteritems():
 				self.reverseMap[foreign_w][native_w] = value
 
-		if Verbose:
-			print "Sorting reversed dictionary..."
-		for foreign_w, native_dict in self.reverseMap.iteritems():
-			self.reverseMap[foreign_w] = collections.OrderedDict(sorted(
-				self.reverseMap[foreign_w].items(), key=lambda t:t[1], reverse=True))
+		# if Verbose:
+		# 	print "Sorting reversed dictionary..."
+		# for foreign_w, native_dict in self.reverseMap.iteritems():
+		# 	self.reverseMap[foreign_w] = collections.OrderedDict(sorted(
+		# 		self.reverseMap[foreign_w].items(), key=lambda t:t[1], reverse=True))
 
 
 	def _normalize(self, initMap):
