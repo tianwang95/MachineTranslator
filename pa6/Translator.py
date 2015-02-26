@@ -11,15 +11,21 @@ import getopt
 
 def translateSentences(sentences, model, langModel=None):
 	outputSentences = []
+	print len(sentences)
+	# it = 0
 	for foreign_s in sentences:
+		# if it%10==0:
+		# 	print it
 		currentSentence = ""
 		for word in foreign_s:
 			candidate_w = model.reverseMap[word].most_common(1)
 			if candidate_w:
-				currentSentence += (candidate_w[0] + " ")
+				currentSentence += (candidate_w[0][0] + " ")
 			else: 
 				currentSentence += (word + " ")
-		sentences.add(currentSentence.strip())
+		print currentSentence
+		# outputSentences.append(currentSentence.strip())
+		# it+=1
 
 	return outputSentences
 
@@ -53,11 +59,11 @@ def main(argv):
 		elif opt == '-g':
 			ngramFile = value
 
-	print "improved!" if isImproved else "Not improved!"
-	print sentencesFile
-	print foreignFile
-	print nativeFile
-	print loadFile
+	# print "improved!" if isImproved else "Not improved!"
+	# print sentencesFile
+	# print foreignFile
+	# print nativeFile
+	# print loadFile
 
 	if foreignFile and nativeFile:
 		model = ModelOne(foreignFile, nativeFile)
@@ -70,8 +76,8 @@ def main(argv):
 			for line in f:
 				sentences.append(line.strip().split())
 		translated = translateSentences(sentences, model, langModel=None)
-		for sentence in translated:
-			print sentence
+		# for sentence in translated:
+		# 	print sentence
 
 
 if __name__=='__main__':

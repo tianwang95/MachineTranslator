@@ -129,11 +129,11 @@ class ModelOne:
 			print "Sorting and reversing dictionary..."
 		for native_w, foreign_dict in initMap.iteritems():
 			for foreign_w, value in foreign_dict.iteritems():
-				self.probabilityMap[native_w][foreign_w] = math.log(value)
+				newVal = math.log(value)
+				self.probabilityMap[native_w][foreign_w] = newVal
 			# self.probabilityMap[native_w] = collections.OrderedDict(sorted(
 			# 	self.probabilityMap[native_w].items(), key=lambda t:t[1], reverse=True))
-			for foreign_w, value in self.probabilityMap[native_w].iteritems():
-				self.reverseMap[foreign_w][native_w] = value
+				self.reverseMap[foreign_w][native_w] = newVal
 
 		# if Verbose:
 		# 	print "Sorting reversed dictionary..."
