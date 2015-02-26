@@ -6,11 +6,17 @@ from math import log
 from collections import defaultdict
 
 class LanguageModel:
-	def __init__(self, unigram_file=None, bigram_file=None, trigram_file=None):
+	def __init__(self, unigram_file="../ngrams/1.txt", bigram_file="../ngrams/2.txt", trigram_file="../ngrams/3.txt"):
 		'''
 			unigram_file: the path to the text file that contains the unigram unigramCounts
+							its expected format is: 
+							token count
 			bigram_file: the path to the text file that contains the unigram bigramCounts 
+							its expected format is:
+							count token1 token2
 			trigram_file:  the path to the text file that contains the unigram trigramCounts
+							its expected format is:
+							count token1 token2 token3
 
 			The language trains itself upon initialization and can score any sentence afterwards.
 			It uses a stupid backoff with Laplace-smoothed unigrams.
