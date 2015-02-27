@@ -3,7 +3,7 @@
 #Tian Wang, Bogac Kerem Goksel, Russell Kaplan, Duc Nguyen
 
 from math import log
-from collections import defaultdict
+import collections
 
 class LanguageModel:
 	def __init__(self, unigram_file="../pa6/ngrams/1.txt", bigram_file="../pa6/ngrams/2.txt", trigram_file="../pa6/ngrams/3.txt"):
@@ -21,9 +21,9 @@ class LanguageModel:
 			The language trains itself upon initialization and can score any sentence afterwards.
 			It uses a stupid backoff with Laplace-smoothed unigrams.
 		'''
-		self.unigramCounts = defaultdict(lambda: 1)
-		self.bigramCounts = defaultdict(lambda: 0)
-		self.trigramCounts = defaultdict(lambda: 0)
+		self.unigramCounts = collections.defaultdict(lambda: 1)
+		self.bigramCounts = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
+		self.trigramCounts = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: 0)))
 		self.totalUnigrams = 0
 		self.train(unigram_file, bigram_file, trigram_file)
 
@@ -39,11 +39,11 @@ class LanguageModel:
 		with open(bigram_file) as b:
 			for line in b:
 				count, token1, token2 = line.split()
-				self.bigramCounts[token1 + " " + token2] = int(count)
+				self.bigramCounts[token1][token2] += int(count)
 		with open(trigram_file) as t:
 			for line in t:
 				count, token1, token2, token3 = line.split()
-				self.trigramCounts[token1 + " " + token2 + " " + token3] = int(count)
+				self.trigramCounts[token1][token2][token3] += int(count)
 		self.totalUnigrams += len(self.unigramCounts)
 				
 
@@ -58,11 +58,10 @@ class LanguageModel:
 		if len(sentence) == 1:
 			return log(self.unigramCounts[sentence[0]]) - log(self.totalUnigrams) + log(0.4*0.4)
 		elif len(sentence) == 2:
-			bigram = sentence[0] + " " + sentence[1]
-			count = self.bigramCounts[bigram]
+			count = self.bigramCounts[sentence[0]][sentence[1]]
 			scoreModifier = 0.4
 			if count:
-				totalCount = self.unigramCounts[sentence[0]] - 1
+				totalCount = sum([val for val in self.bigramCounts[sentence[0]].values()])
 			else:
 				count = self.unigramCounts[sentence[1]]
 				totalCount = self.totalUnigrams
@@ -72,16 +71,16 @@ class LanguageModel:
 			for nextToken in sentence:
 				if lastToken and secondToLastToken:
 					trigram = secondToLastToken + " " + lastToken + " " + nextToken
-					count = self.trigramCounts[trigram]
+					count = self.trigramCounts[secondToLastToken][lastToken][nextToken]
 					scoreModifier = 1
 					if count:
-						totalCount = self.bigramCounts[secondToLastToken + " " + lastToken]
+						totalCount = sum([sum(vals.values()) for vals in self.trigramCounts[secondToLastToken].values()])
 					else:
 						bigram = lastToken + " " + nextToken
-						count  = self.bigramCounts[bigram]
+						count  = self.bigramCounts[lastToken][nextToken]
 						scoreModifier *= 0.4
 						if count:
-							totalCount = self.unigramCounts[lastToken] - 1
+							totalCount = sum(val for val in self.bigramCounts[lastToken].values())
 						else:
 							count = self.unigramCounts[nextToken]
 							totalCount = self.totalUnigrams
