@@ -28,7 +28,7 @@ class LanguageModel:
 		self.train(unigram_file, bigram_file, trigram_file)
 
 	def unigramScore(self, word):
-		return log(self.unigramCounts[word]) - log(self.totalUnigrams)
+		return log(self.unigramCounts[word]) - log(self.totalUnigrams) - log(0.16)
 
 	def train(self, unigram_file, bigram_file, trigram_file):
 		with open(unigram_file) as u:
