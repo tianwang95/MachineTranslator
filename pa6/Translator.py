@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 #Translation script for Machine Learning
 #Tian Wang, Bogac Kerem Goksel, Russell Kaplan, Duc Nguyen
+from os import system
 
 from ModelOne import ModelOne, getDict
+from LanguageModel import LanguageModel
 import itertools as it
 import collections
 import math
@@ -11,21 +13,27 @@ import getopt
 
 def translateSentences(sentences, model, langModel=None):
 	outputSentences = []
-	print len(sentences)
-	# it = 0
+	it = 0
 	for foreign_s in sentences:
-		# if it%10==0:
-		# 	print it
+		if it%100==0:
+			system("say " + str(it))
 		currentSentence = ""
 		for word in foreign_s:
-			candidate_w = model.reverseMap[word].most_common(1)
-			if candidate_w:
-				currentSentence += (candidate_w[0][0] + " ")
+			candidates = model.reverseMap[word].most_common(50)
+			if candidates:
+				bestWord = ""
+				bestScore = float('-inf')
+				for candidate_w in candidates:
+					w_score = candidate_w[1] + langModel.unigramScore(candidate_w[0])
+					if w_score > bestScore:
+						bestWord = candidate_w[0]
+						bestScore = w_score
+				currentSentence += (bestWord + " ")
 			else: 
 				currentSentence += (word + " ")
 		print currentSentence
 		# outputSentences.append(currentSentence.strip())
-		# it+=1
+		it+=1
 
 	return outputSentences
 
@@ -70,12 +78,14 @@ def main(argv):
 	else:
 		model = ModelOne(loadFile=loadFile)
 
+	langModel = LanguageModel()
+
 	if sentencesFile:
 		sentences = []
 		with open(sentencesFile) as f:
 			for line in f:
-				sentences.append(line.strip().split())
-		translated = translateSentences(sentences, model, langModel=None)
+				sentences.append(line.lower().strip().split())
+		translated = translateSentences(sentences, model, langModel)
 		# for sentence in translated:
 		# 	print sentence
 

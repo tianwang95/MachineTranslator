@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #Implementation of IBM Model One Training
 #Tian Wang, Bogac Kerem Goksel, Russell Kaplan, Duc Nguyen
 
@@ -55,6 +56,9 @@ class ModelOne:
 			self.train(iterations, Verbose)
 
 	def loadFromFile(self, fileName):
+		"""
+		Loads a precomputed translation model from the disk.
+		"""
 		mapList = pickle.load( open( fileName, "rb"))
 		self.probabilityMap = mapList[0]
 		self.reverseMap = mapList[1]
@@ -62,6 +66,9 @@ class ModelOne:
 		self.native_lines = mapList[3]
 
 	def saveToFile(self, fileName):
+		"""
+		Saves the data within this translation model to the disk.
+		"""
 		mapList = [self.probabilityMap, self.reverseMap, self.foreign_lines, self.native_lines]
 		pickle.dump( mapList, open(fileName, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -71,8 +78,10 @@ class ModelOne:
 		Removes numbers and punctuation.
 		Returns a list of words
 		"""
-		removeNumbers = '(\d[\d\.\,\%]*[ .]\%? ?)|( \d[\d\.\,\%]*)'
-		return re.sub(removeNumbers, "", line.strip()).split()
+		print line.lower()
+		removeNumbers = r'(\d[\d\.\,\%]*[ .]\%? ?)|( \d[\d\.\,\%]*)'
+		removePunctuation = r'(&.*?;)|( ?[\.\,\:\?])|¿\ | \-|\- '
+		return re.sub(removeNumbers + '|' + removePunctuation, "", line.lower().strip()).split()
 
 
 	def readFile(self, foreignName, nativeName):
@@ -82,7 +91,8 @@ class ModelOne:
 		"""
 		with open(foreignName) as f:
 			for line in f:
-				self.foreign_lines.append(self.processSentence(line))
+				words = self.processSentence(line)
+				self.foreign_lines.append(words)
 		with open(nativeName) as n:
 			for line in n:
 				words = ["<NULL>"]
@@ -131,16 +141,7 @@ class ModelOne:
 			for foreign_w, value in foreign_dict.iteritems():
 				newVal = math.log(value)
 				self.probabilityMap[native_w][foreign_w] = newVal
-			# self.probabilityMap[native_w] = collections.OrderedDict(sorted(
-			# 	self.probabilityMap[native_w].items(), key=lambda t:t[1], reverse=True))
 				self.reverseMap[foreign_w][native_w] = newVal
-
-		# if Verbose:
-		# 	print "Sorting reversed dictionary..."
-		# for foreign_w, native_dict in self.reverseMap.iteritems():
-		# 	self.reverseMap[foreign_w] = collections.OrderedDict(sorted(
-		# 		self.reverseMap[foreign_w].items(), key=lambda t:t[1], reverse=True))
-
 
 	def _normalize(self, initMap):
 		"""
@@ -170,8 +171,6 @@ def main():
 	# for span_line, eng_line in it.izip(model.foreign_lines, model.native_lines):
 	# 	print "Spanish: ", span_line
 	# 	print "English: ", eng_line
-	# print "Spanish Vocab: ", len(model.foreign_vocab)
-	# print "English Vocab: ", len(model.native_vocab)
 
 if __name__ == '__main__':
 	main()

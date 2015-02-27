@@ -6,7 +6,7 @@ from math import log
 from collections import defaultdict
 
 class LanguageModel:
-	def __init__(self, unigram_file="../ngrams/1.txt", bigram_file="../ngrams/2.txt", trigram_file="../ngrams/3.txt"):
+	def __init__(self, unigram_file="../pa6/ngrams/1.txt", bigram_file="../pa6/ngrams/2.txt", trigram_file="../pa6/ngrams/3.txt"):
 		'''
 			unigram_file: the path to the text file that contains the unigram unigramCounts
 							its expected format is: 
@@ -27,20 +27,23 @@ class LanguageModel:
 		self.totalUnigrams = 0
 		self.train(unigram_file, bigram_file, trigram_file)
 
+	def unigramScore(self, word):
+		return log(self.unigramCounts[word]) - log(self.totalUnigrams)
+
 	def train(self, unigram_file, bigram_file, trigram_file):
 		with open(unigram_file) as u:
 			for line in u:
 				token, count = line.split()
-				self.unigramCounts[token] += count
-				self.totalUnigrams += 1
+				self.unigramCounts[token] += int(count)
+				self.totalUnigrams += int(count)
 		with open(bigram_file) as b:
 			for line in b:
 				count, token1, token2 = line.split()
-				self.bigramCounts[token1 + " " + token2] = count
+				self.bigramCounts[token1 + " " + token2] = int(count)
 		with open(trigram_file) as t:
 			for line in t:
 				count, token1, token2, token3 = line.split()
-				self.trigramCounts[token1 + " " + token2 + " " + token3] = count
+				self.trigramCounts[token1 + " " + token2 + " " + token3] = int(count)
 		self.totalUnigrams += len(self.unigramCounts)
 				
 
