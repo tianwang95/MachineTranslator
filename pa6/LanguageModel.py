@@ -23,7 +23,9 @@ class LanguageModel:
 		'''
 		self.unigramCounts = collections.defaultdict(lambda: 1)
 		self.bigramCounts = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
-		self.trigramCounts = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: 0)))
+		self.bigramsWithStartingUnigram = collections.defaultdict(lambda: 1)
+		self.trigramCounts = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
+		self.trigramsWithStartingBigram = collections.defaultdict(lambda: 1)
 		self.totalUnigrams = 0
 		self.train(unigram_file, bigram_file, trigram_file)
 
@@ -43,8 +45,13 @@ class LanguageModel:
 		with open(trigram_file) as t:
 			for line in t:
 				count, token1, token2, token3 = line.split()
-				self.trigramCounts[token1][token2][token3] += int(count)
+				self.trigramCounts[token1 + " " + token2][token3] += int(count)
 		self.totalUnigrams += len(self.unigramCounts)
+		for startWord, bigrams in self.bigramCounts.iteritems():
+			self.bigramsWithStartingUnigram[startWord] = sum([val for key, val in bigrams.iteritems()])
+		for beginning, trigrams in self.trigramCounts.iteritems():
+			self.trigramsWithStartingBigram[beginning] = sum([val for key, val in trigrams.iteritems()])
+
 				
 
 
@@ -61,7 +68,7 @@ class LanguageModel:
 			count = self.bigramCounts[sentence[0]][sentence[1]]
 			scoreModifier = 0.4
 			if count:
-				totalCount = sum([val for val in self.bigramCounts[sentence[0]].values()])
+				totalCount = self.bigramsWithStartingUnigram[sentence[0]]
 			else:
 				count = self.unigramCounts[sentence[1]]
 				totalCount = self.totalUnigrams
@@ -70,17 +77,16 @@ class LanguageModel:
 		else:
 			for nextToken in sentence:
 				if lastToken and secondToLastToken:
-					trigram = secondToLastToken + " " + lastToken + " " + nextToken
-					count = self.trigramCounts[secondToLastToken][lastToken][nextToken]
+					bigram = secondToLastToken + " " + lastToken
+					count = self.trigramCounts[bigram][nextToken]
 					scoreModifier = 1
 					if count:
-						totalCount = sum([sum(vals.values()) for vals in self.trigramCounts[secondToLastToken].values()])
+						totalCount = self.trigramsWithStartingBigram[bigram]
 					else:
-						bigram = lastToken + " " + nextToken
 						count  = self.bigramCounts[lastToken][nextToken]
 						scoreModifier *= 0.4
 						if count:
-							totalCount = sum(val for val in self.bigramCounts[lastToken].values())
+							totalCount = self.bigramsWithStartingUnigram[lastToken]
 						else:
 							count = self.unigramCounts[nextToken]
 							totalCount = self.totalUnigrams
