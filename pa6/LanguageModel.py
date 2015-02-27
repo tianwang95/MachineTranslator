@@ -62,7 +62,7 @@ class LanguageModel:
 			count = self.bigramCounts[bigram]
 			scoreModifier = 0.4
 			if count:
-				totalCount = self.unigramCounts[sentence[0]] - 1
+				totalCount = self.unigramCounts[sentence[0]]
 			else:
 				count = self.unigramCounts[sentence[1]]
 				totalCount = self.totalUnigrams
@@ -81,7 +81,7 @@ class LanguageModel:
 						count  = self.bigramCounts[bigram]
 						scoreModifier *= 0.4
 						if count:
-							totalCount = self.unigramCounts[lastToken] - 1
+							totalCount = self.unigramCounts[lastToken]
 						else:
 							count = self.unigramCounts[nextToken]
 							totalCount = self.totalUnigrams
