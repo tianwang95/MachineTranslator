@@ -24,7 +24,7 @@ def translateSentences(sentences, model, langModel=None):
 				bestWord = ""
 				bestScore = float('-inf')
 				for candidate_w in candidates:
-					w_score = candidate_w[1] + langModel.unigramScore(candidate_w[0])
+					w_score = candidate_w[1] + langModel.score((currentSentence + candidate_w[0]).split())
 					if w_score > bestScore:
 						bestWord = candidate_w[0]
 						bestScore = w_score
@@ -32,7 +32,6 @@ def translateSentences(sentences, model, langModel=None):
 			else: 
 				currentSentence += (word + " ")
 		print currentSentence
-		# outputSentences.append(currentSentence.strip())
 		it+=1
 
 	return outputSentences

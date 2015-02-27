@@ -99,4 +99,3 @@ class LanguageModel:
 				secondToLastToken = lastToken
 				lastToken = nextToken
 		return score
-
