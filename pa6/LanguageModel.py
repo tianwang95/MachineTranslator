@@ -49,10 +49,8 @@ class LanguageModel:
 		self.totalUnigrams += len(self.unigramCounts)
 		for startWord, bigrams in self.bigramCounts.iteritems():
 			self.bigramsWithStartingUnigram[startWord] = sum([val for key, val in bigrams.iteritems()])
-			print "updated, ", self.bigramsWithStartingUnigram[startWord]
 		for beginning, trigrams in self.trigramCounts.iteritems():
 			self.trigramsWithStartingBigram[beginning] = sum([val for key, val in trigrams.iteritems()])
-			print "updated, ", self.trigramsWithStartingBigram[beginning]				
 
 				
 
