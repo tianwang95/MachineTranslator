@@ -22,6 +22,7 @@ class PhraseTable:
 		self.foreign_sentences = []
 		self.native_sentences = []
 		self.phrase_dict = collections.defaultdict(getCounter)
+		self.reverse_phrase_dict = collection.defaultdict(getCounter)
 
 		self.phrase_counts = collections.defaultdict(lambda: collections.defaultdict(lambda: 0.0))
 
@@ -62,6 +63,8 @@ class PhraseTable:
 		self.extract_phrases(phrase_align_table, fsentence, nsentence)
 		print self.phrase_counts
 		"""
+	def __getitem__(self, index):
+		return self.phrase_dict[index]
 
 	def reverse_phrase_align_table(self,phrase_align_table):
 		reverse_table = collections.defaultdict(lambda:set([]))
@@ -236,6 +239,7 @@ class PhraseTable:
 			total = math.log(sum(fore_dict.values()))
 			for fore_phrase, count in fore_dict.iteritems():
 				self.phrase_dict[native_phrase][fore_phrase] = math.log(count) - total
+				self.reverse_phrase_dict[fore_phrase][native_phrase] = math.log(count) - total
 
 def sub_phrases(phrase):#phrase is a tuple of tuples, each tuple is coordinate in phrase_align_table
 	sub_phrases = []
