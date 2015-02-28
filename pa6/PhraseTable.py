@@ -64,7 +64,7 @@ class PhraseTable:
 		print self.phrase_counts
 		"""
 	def __getitem__(self, index):
-		return self.phrase_dict[index]
+		return self.reverse_phrase_dict[index]
 
 	def reverse_phrase_align_table(self,phrase_align_table):
 		reverse_table = collections.defaultdict(lambda:set([]))
