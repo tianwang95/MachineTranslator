@@ -12,7 +12,7 @@ from itertools import izip
 from LanguageModel import LanguageModel
 from PhraseTable import PhraseTable
 
-MAX_STACK_LEN = 5 # HAVE LITERALLY NO FUCKING IDEA WHAT THIS SHOULD BE
+MAX_STACK_LEN = 5
 DISTORTION_CONSTANT = 0.1 # HAVE LITERALLY NO FUCKING IDEA WHAT THIS SHOULD BE
 
 class HypoStack:
@@ -23,9 +23,15 @@ class HypoStack:
 		self.pq = []                         # list of entries arranged in a heap
 		self.entry_finder = {}               # mapping of tasks to entries
 		self.REMOVED = '<removed-elem>'      # placeholder for a removed task
+		self.nFlaggedForRemoval = 0
 
 	def __len__(self):
-		return len(self.pq)
+		return len(self.pq) - self.nFlaggedForRemoval
+
+	def __iter__(self):
+		for entry in self.pq:
+			if entry[-1] != self.REMOVED:
+				yield entry[-1]
 
 	def add(self, elem, priority=0):
     	'Add a new elem or update the priority of an existing elem'
@@ -39,6 +45,7 @@ class HypoStack:
     	'Mark an existing task as REMOVED.  Raise KeyError if not found.'
     	entry = self.entry_finder.pop(elem)
     	entry[-1] = self.REMOVED
+    	self.nFlaggedForRemoval += 1
 
 	def pop(self):
     	'Remove and return the lowest priority task. Raise KeyError if empty.'
@@ -47,10 +54,14 @@ class HypoStack:
         	if elem is not self.REMOVED:
             	del self.entry_finder[elem]
             	return elem
+            else:
+            	self.nFlaggedForRemoval -= 1
     	raise KeyError('pop from an empty priority queue')
 
     def remove_worst(self):
-		self.remove(self.nlargest(1)[0])
+		self.remove(heapq.nlargest(1, self.pq)[0][-1])
+
+
 
 
 class Hypothesis:
@@ -186,7 +197,7 @@ class Decoder:
 		the i'th stack in hypStacks consists of hypotheses that cover i words of the foreign sentence
 		"""
 		for i in xrange(len(src_sentence)):
-			for j in xrange(i, len(src_sentence)):
+			for j in xrange(i+1, len(src_sentence)):
 				foreign_phrase = src_sentence[i:j]
 				best_phrase = ""
 				highest_prob = float('-inf')
@@ -206,7 +217,7 @@ class Decoder:
 		hypStacks[0].add(Hypothesis([], '0' * len(src_sentence), 0, 0, None, self.heuristic_table, self.language_model, self.phrase_table), float('inf'))
 
 		for hypStack in hypStacks:
-			for hyp, cost in hypStack.pq:
+			for hyp, cost in hypStack:
 				new_hyps = self.derive_new_hyps(hyp)
 				for new_hyp in new_hyps:
 					nf_new_hyp = new_hyp.covering.count('1')
@@ -214,7 +225,7 @@ class Decoder:
 					DONE
 					For recombination, whenever you add a new hypothesis, look at the other hypotheses in the same stack and do this:
 						– same number of foreign words translated
-						– same last two English words in output
+						– same last three English words in output
 						– same last foreign word translated
 					"""
 					new_hyp_trigram = new_hyp.get_trigram()
@@ -232,3 +243,13 @@ class Decoder:
 					if len(hypStacks[nf_new_hyp]) > MAX_STACK_LEN:
 						hypStacks[nf_new_hyp].remove_worst()
 		return hypStacks[-1].pop()
+
+if __name__ == '__main__':
+	hp = HypoStack()
+	hp.add('apples', 1)
+	hp.add('donuts', 4)
+	hp.add('bananas', 2)
+	hp.add('carrots', 3)
+	hp.remove('apples')
+	for h in hp:
+		print h
