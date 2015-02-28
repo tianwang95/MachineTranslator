@@ -78,7 +78,7 @@ class ModelOne:
 		Removes numbers and punctuation.
 		Returns a list of words
 		"""
-		print line.lower()
+		#print line.lower()
 		removeNumbers = r'(\d[\d\.\,\%]*[ .]\%? ?)|( \d[\d\.\,\%]*)'
 		removePunctuation = r'(&.*?;)|( ?[\.\,\:\?])|¿\ | \-|\- '
 		return re.sub(removeNumbers + '|' + removePunctuation, "", line.lower().strip()).split()
@@ -163,9 +163,9 @@ def main():
 	# spanish_file = "../pa6/test.es"
 	# english_file = "../pa6/test.en"
 
-	model = ModelOne(spanish_file, english_file, Verbose=True)
+	model = ModelOne(english_file, spanish_file, Verbose=True)
 	print "done"
-	model.saveToFile("save.model")
+	model.saveToFile("english-spanish.model")
 
 	print model["house"]["casa"]
 	# for span_line, eng_line in it.izip(model.foreign_lines, model.native_lines):
