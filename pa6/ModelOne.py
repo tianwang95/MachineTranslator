@@ -163,9 +163,9 @@ def main():
 	# spanish_file = "../pa6/test.es"
 	# english_file = "../pa6/test.en"
 
-	model = ModelOne(english_file, spanish_file, Verbose=True)
+	model = ModelOne(spanish_file, english_file, Verbose=True)
 	print "done"
-	model.saveToFile("english-spanish.model")
+	model.saveToFile("save.model")
 
 	print model["house"]["casa"]
 	# for span_line, eng_line in it.izip(model.foreign_lines, model.native_lines):

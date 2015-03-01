@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 #Implementation of IBM Model One Training
 
@@ -13,243 +14,241 @@ from LanguageModel import LanguageModel
 from PhraseTable import PhraseTable
 
 MAX_STACK_LEN = 5
-DISTORTION_CONSTANT = 0.1 # HAVE LITERALLY NO FUCKING IDEA WHAT THIS SHOULD BE
+DISTORTION_CONSTANT = 0.1
 
 class HypoStack:
-	"""
-	Is a priority queue of hypotheses
-	"""
-	def __init__():
-		self.pq = []                         # list of entries arranged in a heap
-		self.entry_finder = {}               # mapping of tasks to entries
-		self.REMOVED = '<removed-elem>'      # placeholder for a removed task
-		self.nFlaggedForRemoval = 0
+    """
+    Is a priority queue of hypotheses
+    """
+    def __init__(self):
+        self.pq = []                         # list of entries arranged in a heap
+        self.entry_finder = {}               # mapping of tasks to entries
+        self.REMOVED = '<removed-elem>'      # placeholder for a removed task
+        self.nFlaggedForRemoval = 0
 
-	def __len__(self):
-		return len(self.pq) - self.nFlaggedForRemoval
+    def __len__(self):
+        return len(self.pq) - self.nFlaggedForRemoval
 
-	def __iter__(self):
-		for entry in self.pq:
-			if entry[-1] != self.REMOVED:
-				yield entry[-1]
+    def __iter__(self):
+        for entry in self.pq:
+            if entry[-1] != self.REMOVED:
+                yield entry[-1]
 
-	def add(self, elem, priority=0):
-    	'Add a new elem or update the priority of an existing elem'
-    	if elem in self.entry_finder:
-        	remove_elem(elem)
-    	entry = [priority, elem]
-    	self.entry_finder[elem] = entry
-    	heappush(self.pq, entry)
+    def add(self, elem, priority=0):
+        'Add a new elem or update the priority of an existing elem'
+        if elem in self.entry_finder:
+            remove_elem(elem)
+        entry = [priority, elem]
+        self.entry_finder[elem] = entry
+        heapq.heappush(self.pq, entry)
 
-	def remove(self, elem):
-    	'Mark an existing task as REMOVED.  Raise KeyError if not found.'
-    	entry = self.entry_finder.pop(elem)
-    	entry[-1] = self.REMOVED
-    	self.nFlaggedForRemoval += 1
+    def remove(self, elem):
+        'Mark an existing task as REMOVED.  Raise KeyError if not found.'
+        entry = self.entry_finder.pop(elem)
+        entry[-1] = self.REMOVED
+        self.nFlaggedForRemoval += 1
 
-	def pop(self):
-    	'Remove and return the lowest priority task. Raise KeyError if empty.'
-    	while self.pq:
-        	priority, elem = heappop(self.pq)
-        	if elem is not self.REMOVED:
-            	del self.entry_finder[elem]
-            	return elem
+    def pop(self):
+        'Remove and return the lowest priority task. Raise KeyError if empty.'
+        while self.pq:
+            priority, elem = heapq.heappop(self.pq)
+            if elem is not self.REMOVED:
+                del self.entry_finder[elem]
+                return elem
             else:
-            	self.nFlaggedForRemoval -= 1
-    	raise KeyError('pop from an empty priority queue')
+                self.nFlaggedForRemoval -= 1
+        raise KeyError('pop from an empty priority queue')
 
     def remove_worst(self):
-		self.remove(heapq.nlargest(1, self.pq)[0][-1])
+        self.remove(heapq.nlargest(1, self.pq)[0][-1])
 
 
 
 
 class Hypothesis:
-	"""
-	Represents a hypothesis with cost, words translated so far, and marks of which words
-	have been covered.
-	"""
-	def __init__(self, english_phrase, covering, fp_start, fp_end, prev_hyp, ht, lm, pt):
-		self.english_phrase = english_phrase #The english phrase associated with this foreign_phrase(just the last one)
-		self.covering = covering #The complete list of foreign words covered by this hypothesis
-		self.cost = compute_cost(ht, lm, pt) #Search cost of this hypothesis
-		self.prev_hyp = prev_hyp #Its previous hypothesis in the search tree
-		self.total = prev_hyp.total + 1 if prev_hyp.total else 1 #What is this variable? Should have commented.
-		self.fp_start = fp_start # The index of the firs word of the foreign phrase this hypothesis covers
-		self.fp_end = fp_end # The index of the last word of the foreign phrase this hypothesis covers
+    """
+    Represents a hypothesis with cost, words translated so far, and marks of which words
+    have been covered.
+    """
+    def __init__(self, english_phrase, covering, fp_start, fp_end, prev_hyp, ht, lm, pt):
+        self.english_phrase = english_phrase #The english phrase associated with this foreign_phrase(just the last one)
+        self.covering = covering #The complete list of foreign words covered by this hypothesis
+        self.cost = compute_cost(ht, lm, pt) #Search cost of this hypothesis
+        self.prev_hyp = prev_hyp #Its previous hypothesis in the search tree
+        self.total = prev_hyp.total + 1 if prev_hyp.total else 1 #What is this variable? Should have commented.
+        self.fp_start = fp_start # The index of the firs word of the foreign phrase this hypothesis covers
+        self.fp_end = fp_end # The index of the last word of the foreign phrase this hypothesis covers
 
-	def get_foreign_phrase(self, src_sentence):
-		"""
-		Takes src_sentence as a list of words.
-		Should return the foreign phrase the hypothesis covers as a space separated string.
-		"""
-		fp = src_sentence[self.fp_start]
-		for word in src_sentence[self.fp_start+1:self.fp_end]:
-			fp += " " + word
-		return fp
+    def get_foreign_phrase(self, src_sentence):
+        """
+        Takes src_sentence as a list of words.
+        Should return the foreign phrase the hypothesis covers as a space separated string.
+        """
+        fp = src_sentence[self.fp_start]
+        for word in src_sentence[self.fp_start+1:self.fp_end]:
+            fp += " " + word
+        return fp
 
-	def compute_cost(self, ht, lm, pt):
-		"""
-		Current cost: DONE
-		The product of translation, distortion and language model probalities for each phrase.
+    def compute_cost(self, ht, lm, pt):
+        """
+        Current cost: DONE
+        The product of translation, distortion and language model probalities for each phrase.
 
-		Future cost: TODO
-		Use Viterbi with language model translation
+        Future cost: TODO
+        Use Viterbi with language model translation
 
-		DISTORTION PROBABILITY:
-		What is this? Let's see...
-		 log(α^(|ai−bi−1−1|))
-		 α is a small constant.
-		 ai is the start position of the foreign phrase generated by the ith english phrase
-		 	ai is self.fp_start
-		 bi-1 is the end position of the foreign phrase generated by the i-1th english phrase
-		 	bi is self.prev_hyp.fp_end
-		"""
+        DISTORTION PROBABILITY:
+        What is this? Let's see...
+         log(α^(|ai−bi−1−1|))
+         α is a small constant.
+         ai is the start position of the foreign phrase generated by the ith english phrase
+            ai is self.fp_start
+         bi-1 is the end position of the foreign phrase generated by the i-1th english phrase
+            bi is self.prev_hyp.fp_end
+        """
 
-		translation_probability = pt[self.get_foreign_phrase()][self.english_phrase]
-		language_probability = lm.score(self.get_trigram)
-		distortion_probability = math.log(math.pow(DISTORTION_CONSTANT,math.abs(self.fp_start - self.prev_hyp.fp_end - 1)))
+        translation_probability = pt[self.get_foreign_phrase()][self.english_phrase]
+        language_probability = lm.score(self.get_trigram)
+        distortion_probability = math.log(math.pow(DISTORTION_CONSTANT,math.abs(self.fp_start - self.prev_hyp.fp_end - 1)))
 
-		cur_prob = translation_probability+language_probability+distortion_probability
-		
-		 """
-		 HEURISTIC
-		 Look at each contiguous uncovered part of the foreign sentence, get its cheapest cost, sum those.
-		 """
+        cur_prob = translation_probability+language_probability+distortion_probability
 
-		inZeroStreak = False
-		setOfIndexTuples = set()
-		curStartIndex
-		for i, char in enumerate(self.covering):
-			if char == '0' and not inZeroStreak:
-				inZeroStreak = True
-				curStartIndex = i
-			elif char == '1' and inZeroStreak:
-				inZeroStreak = False
-				setOfIndexTuples.add(curStartIndex,i)
-		if inZeroStreak: setOfIndexTuples.add(curStartIndex, len(self.covering)-1)
+        inZeroStreak = False
+        setOfIndexTuples = set()
+        curStartIndex
+        for i, char in enumerate(self.covering):
+            if char == '0' and not inZeroStreak:
+                inZeroStreak = True
+                curStartIndex = i
+            elif char == '1' and inZeroStreak:
+                inZeroStreak = False
+                setOfIndexTuples.add(curStartIndex,i)
+        if inZeroStreak: setOfIndexTuples.add(curStartIndex, len(self.covering)-1)
 
-		fut_prob = 0
-		
-		for futurePhrase in setOfIndexTuples:
-			fut_prob += ht[futurePhrase[0]][futurePhrase[1]]
+        fut_prob = 0
+        
+        for futurePhrase in setOfIndexTuples:
+            fut_prob += ht[futurePhrase[0]][futurePhrase[1]]
 
-		total_prob = cur_prob + future_prob
+        total_prob = cur_prob + future_prob
 
-		return -total_prob
+        return -total_prob
 
-	def get_trigram(self):
-		"""
-		DONE
-		Returns the last (at most three) english words of the given hypothesis in a list.
-		"""
-		trigram = []
-		cur_hyp = self
-		while cur_hyp.english_phrase and len(trigram) < 3:
-			trigram = [cur_hyp.english_phrase] + trigram
-			cur_hyp = cur_hyp.prev_hyp
-		trigram = trigram[-3:] if len(trigram) > 3 
-		return trigram
+    def get_trigram(self):
+        """
+        DONE
+        Returns the last (at most three) english words of the given hypothesis in a list.
+        """
+        trigram = []
+        cur_hyp = self
+        while cur_hyp.english_phrase and len(trigram) < 3:
+            trigram = [cur_hyp.english_phrase] + trigram
+            cur_hyp = cur_hyp.prev_hyp
+        trigram = trigram[-3:] if len(trigram) > 3 else trigram
+        return trigram
 
 
-	def __cmp__(self, other):
-		return cmp(self.cost, other.cost)
+    def __cmp__(self, other):
+        return cmp(self.cost, other.cost)
 
 class Decoder:
-	"""
-	Implements a decoder for statistical MT.
-	"""
-	def __init__(self, phrase_table):
-		self.phrase_table = phrase_table
-		self.language_model = LanguageModel()
-		self.heuristic_table = collections.defaultdict(lambda: {})
+    """
+    Implements a decoder for statistical MT.
+    """
+    def __init__(self, phrase_table):
+        self.phrase_table = phrase_table
+        self.language_model = LanguageModel()
+        self.heuristic_table = collections.defaultdict(lambda: {})
 
-	def derive_new_hyps(self, src_sentence, hyp):
-		"""
-		DONE
-		returns all possible expansions of the given hypothesis.
-		Loops through source sentence, starts expanding from each uncovered word.
-		for all totally uncovered phrases that are in the dict,
-			creates a new hypothesis with an updated covering and new phrase.
-		returns the list of all the new hypotheses.
-		"""
-		new_hyps = []
-		for i in xrange(src_sentence):
-			if hyp.covering[i] == '1':
-				continue
-			cur_phrase = []
-			j = 0
-			while i+j < len(src_sentence):
-				phrase.append(src_sentence[i + j])
-				if phrase in self.phrase_table and hyp.covering[i + j] == '0':
-					for native_phrase, prob in self.phrase_table[phrase]:
-						new_hyp = Hypothesis(native_phrase, hyp.covering[:i] + '1' * (j + 1 - i) + covering[j+1:], i, i+j, hyp, self.heuristic_table, self.language_model, self.phrase_table)
-						new_hyps.append(new_hyp)
-					j += 1
-				else:
-					break
-		return new_hyps
+    def derive_new_hyps(self, src_sentence, hyp):
+        """
+        DONE
+        returns all possible expansions of the given hypothesis.
+        Loops through source sentence, starts expanding from each uncovered word.
+        for all totally uncovered phrases that are in the dict,
+            creates a new hypothesis with an updated covering and new phrase.
+        returns the list of all the new hypotheses.
+        """
+        new_hyps = []
+        for i in xrange(src_sentence):
+            if hyp.covering[i] == '1':
+                continue
+            cur_phrase = []
+            j = 0
+            while i+j < len(src_sentence):
+                phrase.append(src_sentence[i + j])
+                if phrase in self.phrase_table and hyp.covering[i + j] == '0':
+                    for native_phrase, prob in self.phrase_table[phrase]:
+                        new_hyp = Hypothesis(native_phrase, hyp.covering[:i] + '1' * (j + 1 - i) + covering[j+1:], i, i+j, hyp, self.heuristic_table, self.language_model, self.phrase_table)
+                        new_hyps.append(new_hyp)
+                    j += 1
+                else:
+                    break
+        return new_hyps
 
-	def beam_search_stack_decode(self, src_sentence):
-		"""
-		Assumes src_sentence is a list of tokens.
-		hypStacks is a list of hypothesis stacks.
-		the i'th stack in hypStacks consists of hypotheses that cover i words of the foreign sentence
-		"""
-		for i in xrange(len(src_sentence)):
-			for j in xrange(i+1, len(src_sentence)):
-				foreign_phrase = src_sentence[i:j]
-				best_phrase = ""
-				highest_prob = float('-inf')
-				for native_phrase, translation_probability in self.phrase_table[foreign_phrase]:
-					prob = translation_probability + self.language_model.score(native_phrase.split())
-					if prob > highest_prob:
-						highest_prob = prob
-						best_phrase = native_phrase
-				self.heuristic_table[i][j] = (best_phrase, highest_prob)
+    def beam_search_stack_decode(self, src_sentence):
+        """
+        Assumes src_sentence is a list of tokens.
+        hypStacks is a list of hypothesis stacks.
+        the i'th stack in hypStacks consists of hypotheses that cover i words of the foreign sentence
+        """
+        for i in xrange(len(src_sentence)):
+            for j in xrange(i+1, len(src_sentence)):
+                foreign_phrase = src_sentence[i:j]
+                best_phrase = ""
+                highest_prob = float('-inf')
+                for native_phrase, translation_probability in self.phrase_table[foreign_phrase]:
+                    prob = translation_probability + self.language_model.score(native_phrase.split())
+                    if prob > highest_prob:
+                        highest_prob = prob
+                        best_phrase = native_phrase
+                self.heuristic_table[i][j] = (best_phrase, highest_prob)
 
 
 
-		hypStacks = [ HypoStack() for i in len(src_sentence)]
-		"""
-		What will the cost of NULL Hypothesis be? Right now I don't know what it calculates but I'm enqueueing it with FLT_MAX
-		"""
-		hypStacks[0].add(Hypothesis([], '0' * len(src_sentence), 0, 0, None, self.heuristic_table, self.language_model, self.phrase_table), float('inf'))
+        hypStacks = [ HypoStack() for i in len(src_sentence)]
+        """
+        What will the cost of NULL Hypothesis be? Right now I don't know what it calculates but I'm enqueueing it with FLT_MAX
+        """
+        hypStacks[0].add(Hypothesis([], '0' * len(src_sentence), 0, 0, None, self.heuristic_table, self.language_model, self.phrase_table), float('inf'))
 
-		for hypStack in hypStacks:
-			for hyp, cost in hypStack:
-				new_hyps = self.derive_new_hyps(hyp)
-				for new_hyp in new_hyps:
-					nf_new_hyp = new_hyp.covering.count('1')
-					"""
-					DONE
-					For recombination, whenever you add a new hypothesis, look at the other hypotheses in the same stack and do this:
-						– same number of foreign words translated
-						– same last three English words in output
-						– same last foreign word translated
-					"""
-					new_hyp_trigram = new_hyp.get_trigram()
-					new_hyp_last_word = src_sentence[new_hyp.fp_end]
-					add_new_hyp = True
-					for other_hyp  in hypStacks[nf_new_hyp]:
-						if other_hyp.get_trigram() == new_hyp_trigram and src_sentence[other_hyp.fp_end] == new_hyp_last_word:
-							if other_hyp.cost < new_hyp.cost:
-								add_new_hyp = False
-								break
-							else:
-								hypStacks[nf_new_hyp].remove(other_hyp)
-					if not add_new_hyp: continue
-					hypStacks[nf_new_hyp].add(new_hyp, new_hyp.cost)
-					if len(hypStacks[nf_new_hyp]) > MAX_STACK_LEN:
-						hypStacks[nf_new_hyp].remove_worst()
-		return hypStacks[-1].pop()
+        for hypStack in hypStacks:
+            while len(hypStack) > 0:
+                hyp = hypStack.pop()
+                new_hyps = self.derive_new_hyps(hyp)
+                for new_hyp in new_hyps:
+                    nf_new_hyp = new_hyp.covering.count('1')
+                    """
+                    DONE
+                    For recombination, whenever you add a new hypothesis, look at the other hypotheses in the same stack and do this:
+                        – same number of foreign words translated
+                        – same last three English words in output
+                        – same last foreign word translated
+                    """
+                    new_hyp_trigram = new_hyp.get_trigram()
+                    new_hyp_last_word = src_sentence[new_hyp.fp_end]
+                    add_new_hyp = True
+                    for other_hyp  in hypStacks[nf_new_hyp]:
+                        if other_hyp.get_trigram() == new_hyp_trigram and src_sentence[other_hyp.fp_end] == new_hyp_last_word:
+                            if other_hyp.cost < new_hyp.cost:
+                                add_new_hyp = False
+                                break
+                            else:
+                                hypStacks[nf_new_hyp].remove(other_hyp)
+                    if not add_new_hyp: continue
+                    hypStacks[nf_new_hyp].add(new_hyp, new_hyp.cost)
+                    if len(hypStacks[nf_new_hyp]) > MAX_STACK_LEN:
+                        hypStacks[nf_new_hyp].remove_worst()
+        return hypStacks[-1].pop()
 
 if __name__ == '__main__':
-	hp = HypoStack()
-	hp.add('apples', 1)
-	hp.add('donuts', 4)
-	hp.add('bananas', 2)
-	hp.add('carrots', 3)
-	hp.remove('apples')
-	for h in hp:
-		print h
+    hp = HypoStack()
+    hp.add('apples', 1)
+    hp.add('donuts', 4)
+    hp.add('bananas', 2)
+    hp.add('carrots', 3)
+    hp.remove('donuts')
+    hp.add('ZZZ', 100)
+    hp.add('AAA', 0)
+    while len(hp) > 0:
+        print hp.pop()
